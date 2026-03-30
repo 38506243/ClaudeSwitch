@@ -1,0 +1,24 @@
+# Build output
+src/bin/
+src/obj/
+*.app/Contents/MacOS/*
+!.app/Contents/Info.plist
+
+# macOS
+.DS_Store
+*.swp
+
+# .NET
+*.dll
+*.pdb
+*.runtimeconfig.json
+*.deps.json
+*.AssemblyInfo.cs
+*.AssemblyReference.cache
+*.assets.cache
+*.FileListAbsolute.txt
+*.nuget.*
+
+# IDE
+.vs/
+.idea/
