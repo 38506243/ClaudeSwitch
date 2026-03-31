@@ -698,16 +698,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 }
             }
 
-            // Cmd+V 粘贴
+            // Cmd+V 粘贴（去除换行符，避免多行文本进入单行字段）
             if key == "v" {
-                guard let clipboard = NSPasteboard.general.string(forType: .string) else { return event }
+                guard let raw = NSPasteboard.general.string(forType: .string) else { return event }
+                // 换行符替换为空格（适用于所有文本框）
+                let cleaned = raw.replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: "\r", with: " ")
                 if let tv = NSApp.keyWindow?.firstResponder as? NSTextView {
-                    tv.insertText(clipboard, replacementRange: tv.selectedRange())
+                    tv.insertText(cleaned, replacementRange: tv.selectedRange())
                     return nil
                 }
                 if let tf = NSApp.keyWindow?.firstResponder as? NSTextField,
                    let editor = tf.currentEditor() as? NSTextView {
-                    editor.insertText(clipboard, replacementRange: editor.selectedRange())
+                    editor.insertText(cleaned, replacementRange: editor.selectedRange())
                     return nil
                 }
             }
