@@ -307,16 +307,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - 菜单构建
     func menuWillOpen(_ menu: NSMenu) {
-        loadModels()
         buildMenu(menu)
-    }
-
-    // 公开方法，允许在选择模型后主动刷新菜单
-    private func refreshMenu() {
-        if let menu = statusItem.menu {
-            loadModels()
-            buildMenu(menu)
-        }
     }
 
     private func buildMenu(_ menu: NSMenu) {
@@ -379,7 +370,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if model.apiToken.isEmpty { model.apiToken = defaultToken }
         applyModel(model)
         statusItem.button?.title = "🤖 \(model.name)"
-        // 立即刷新菜单，使打勾状态在下次打开时正确显示
         if let menu = statusItem.menu {
             buildMenu(menu)
         }
@@ -403,10 +393,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             showError("写入配置失败: \(error.localizedDescription)")
             return
         }
+
         for i in 0..<models.count {
             models[i].isActive = (models[i].id == model.id)
             if models[i].id == model.id { models[i] = model }
         }
+
         saveModels()
     }
 
