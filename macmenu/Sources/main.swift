@@ -471,7 +471,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         sheetSelectedProviderIdx = -1
 
         // 面板高度：320pt，内容基本垂直居中
-        let panelH: CGFloat = 500
+        let panelH: CGFloat = 400
         let panelW: CGFloat = 500
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: panelW, height: panelH),
@@ -492,7 +492,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         let fw: CGFloat = 340
         let fh: CGFloat = 24
         let gy: CGFloat = 38
-        let startY: CGFloat = 460   // 内容顶部（510-460=50pt底部padding）
+        let startY: CGFloat = 360   // 内容顶部（510-460=50pt底部padding）
 
         // 第1行：预设厂商下拉框
         let providerLbl = NSTextField(labelWithString: "预设厂商:")
@@ -519,6 +519,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         sheetNameField.frame = NSRect(x: pad + lw + 8, y: startY - gy, width: fw, height: fh)
         sheetNameField.placeholderString = "例如: MiniMax、GLM-4、Kimi"
         sheetNameField.stringValue = existing?.name ?? ""
+        sheetNameField.isEditable = (mode == .add)  // 添加模式可编辑，编辑模式只读
+        sheetNameField.isEnabled = (mode == .add)
+        sheetNameField.textColor = (mode == .add) ? .textColor : .secondaryLabelColor
         vw.addSubview(sheetNameField)
 
         // 第3行：Base URL
@@ -594,7 +597,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         // 提示文字
         // 提示文字（y=75，模型ID行底部在130+24=154，gap=79pt）
         let hintLbl = NSTextField(labelWithString: "")
-        hintLbl.frame = NSRect(x: pad, y: 180, width: 455, height: 30)
+        hintLbl.frame = NSRect(x: pad, y: 70, width: 455, height: 30)
         hintLbl.font = NSFont.systemFont(ofSize: 11)
         hintLbl.textColor = .secondaryLabelColor
         hintLbl.stringValue = "提示: 选择预设厂商可自动填充 Base URL 和模型下拉列表。Token 留空使用全局 Token。"
@@ -602,7 +605,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         vw.addSubview(hintLbl)
 
         // 按钮
-        let by: CGFloat = 140
+        let by: CGFloat = 30
 
         let saveBtn = NSButton(title: mode == .add ? "添加" : "保存", target: self, action: #selector(sheetSave(_:)))
         saveBtn.bezelStyle = .rounded
@@ -620,7 +623,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         if mode == .edit {
             let delBtn = NSButton(title: "删除此模型", target: self, action: #selector(sheetDelete(_:)))
             delBtn.bezelStyle = .rounded
-            delBtn.frame = NSRect(x: pad, y: by, width: 120, height: 28)
+            delBtn.frame = NSRect(x: pad * 5, y: by, width: 100, height: 28)
             delBtn.contentTintColor = .systemRed
             vw.addSubview(delBtn)
         }
