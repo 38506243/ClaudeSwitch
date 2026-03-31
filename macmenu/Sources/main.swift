@@ -657,33 +657,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // 挂载标准 Edit 菜单（使 Cmd+V/C+Z 等在文本框内生效）
-    private func installEditMenu() {
-        let editMenu = NSMenu(title: "编辑")
-        let items: [(String, String, String)] = [
-            ("剪切", "cut:", "x"),
-            ("复制", "copy:", "c"),
-            ("粘贴", "paste:", "v"),
-            ("全选", "selectAll:", "a"),
-        ]
-        for (title, sel, key) in items {
-            let item = NSMenuItem(title: title, action: Selector(sel), keyEquivalent: key)
-            item.target = nil
-            editMenu.addItem(item)
-        }
+    // 为 sheet 中的文本框启用 Cmd+V 等快捷键
+    // 方案：注册本地事件监听，手动处理 Cmd+V 粘贴
+    private var eventMonitor: Any?
 
-        let mainMenu = NSMenu(title: "")
-        let editItem = NSMenuItem(title: "编辑", action: nil, keyEquivalent: "")
-        editItem.submenu = editMenu
-        mainMenu.addItem(editItem)
-        NSApp.mainMenu = mainMenu
-        temporaryEditMenu = mainMenu
+    private func installEditMenu() {
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard event.modifierFlags.contains(.command) else { return event }
+            let key = event.charactersIgnoringModifiers ?? ""
+            if key == "v" {
+                guard let clipboard = NSPasteboard.general.string(forType: .string) else { return event }
+                // NSTextView 直接
+                if let tv = NSApp.keyWindow?.firstResponder as? NSTextView {
+                    tv.insertText(clipboard, replacementRange: tv.selectedRange())
+                    return nil
+                }
+                // NSTextField: 获取 field editor 插入
+                if let tf = NSApp.keyWindow?.firstResponder as? NSTextField {
+                    if let editor = tf.currentEditor() as? NSTextView {
+                        editor.insertText(clipboard, replacementRange: editor.selectedRange())
+                        return nil
+                    }
+                }
+            }
+            return event
+        }
     }
 
-    // 卸载临时 Edit 菜单
     private func uninstallEditMenu() {
-        NSApp.mainMenu = nil
-        temporaryEditMenu = nil
+        if let m = eventMonitor {
+            NSEvent.removeMonitor(m)
+            eventMonitor = nil
+        }
     }
 
     @objc private func sheetSave(_ sender: NSButton) {
