@@ -619,10 +619,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func sheetSave(_ sender: NSButton) {
+        // 强制提交正在编辑的文本框内容
+        sheetPanel?.makeFirstResponder(nil)
+
+        // 文本框优先；下拉只在下拉有选中（非"从预设选"）且文本框为空时才补充
         let name = sheetNameField.stringValue.trimmingCharacters(in: CharacterSet.whitespaces)
         let url = sheetUrlField.stringValue.trimmingCharacters(in: CharacterSet.whitespaces)
         let token = sheetTokenField.stringValue.trimmingCharacters(in: CharacterSet.whitespaces)
-        let modelId = sheetModelField.stringValue.trimmingCharacters(in: CharacterSet.whitespaces)
+        let typedModelId = sheetModelField.stringValue.trimmingCharacters(in: CharacterSet.whitespaces)
+        let popupModelId = sheetModelPopup.titleOfSelectedItem ?? ""
+        let modelId = !typedModelId.isEmpty ? typedModelId : popupModelId
 
         if name.isEmpty || url.isEmpty || modelId.isEmpty {
             showError("名称、Base URL 和模型 ID 不能为空"); return
