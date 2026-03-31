@@ -431,25 +431,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         sheetModelField.stringValue = existing?.modelId ?? ""
         vw.addSubview(sheetModelField)
 
-        // 模型 ID 快捷下拉（根据当前选中的预设厂商动态过滤）
+        // 模型 ID 快捷下拉（先以自定义模式初始化，后续会根据匹配结果重建）
         let modelPopupX = pad + lw + 8 + fw - 96
         let modelPopupY = startY - gy * 4 - tokenFieldH + fh + 4
         sheetModelPopup = NSPopUpButton(frame: NSRect(x: modelPopupX, y: modelPopupY, width: 96, height: fh))
-        rebuildModelPopup(idx: -1, selectedModelId: existing?.modelId)
         sheetModelPopup.target = self
         sheetModelPopup.action = #selector(modelPopupChanged(_:))
         vw.addSubview(sheetModelPopup)
 
-        // 如果现有配置匹配某个预设厂商，自动选中它
+        // 如果现有配置匹配某个预设厂商，自动选中它并重建模型下拉
+        var matchedProviderIdx = -1
         if let existingUrl = existing?.baseUrl, !existingUrl.isEmpty {
             for (idx, p) in PRESET_PROVIDERS.enumerated() {
                 if p.baseUrl == existingUrl {
                     sheetProviderPopup.selectItem(at: idx + 1)
                     sheetSelectedProviderIdx = idx
+                    matchedProviderIdx = idx
                     break
                 }
             }
         }
+        rebuildModelPopup(idx: matchedProviderIdx, selectedModelId: existing?.modelId)
 
         // 提示文字
         let hintLbl = NSTextField(labelWithString: "")
