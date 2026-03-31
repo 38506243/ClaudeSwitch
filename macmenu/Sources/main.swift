@@ -603,7 +603,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         vw.addSubview(hintLbl)
 
         // 按钮
-        let by: CGFloat = 153
+        let by: CGFloat = 140  //153
 
         let saveBtn = NSButton(title: mode == .add ? "添加" : "保存", target: self, action: #selector(sheetSave(_:)))
         saveBtn.bezelStyle = .rounded
