@@ -116,6 +116,11 @@
 - 保存在 `~/.claude/model-switcher/settings.json` 的 `launchAtLogin` 字段
 - 由 SMAppService.mainApp（macOS 13+）实际注册登录项
 
+### 3.6 预设厂商列表
+- 保存在 `~/.claude/model-switcher/providers.json`
+- 首次运行自动写入默认 8 家厂商
+- 用户可自行编辑该文件添加新厂商或修改模型列表
+
 ---
 
 ## 4. 菜单结构
@@ -168,18 +173,22 @@
 
 ---
 
-## 6. 内置预设厂商（按字母排序）
+## 6. 预设厂商（存储在 providers.json）
+
+> 首次运行自动写入 `~/.claude/model-switcher/providers.json`，后续从该文件读取，支持用户自行添加/修改/删除厂商。
+
+### 默认预设厂商（按字母排序）
 
 | 厂商 | Base URL | 模型示例 |
 |------|---------|---------|
 | Anthropic 官方 | `https://api.anthropic.com` | claude-sonnet-4-6, claude-opus-4-5, claude-haiku-3-5 |
 | DashScope（阿里云） | `https://dashscope.aliyuncs.com/compatible-mode/v1` | qwen-plus, qwen-max, qwen-turbo |
-| Gemini（Google AI） | `https://generativelanguage.googleapis.com/v1beta` | gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash |
-| Kimi（Moonshot AI） | `https://api.moonshot.cn/v1` | moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k, kimi-plus |
-| MiniMax | `https://api.minimaxi.com/anthropic` | MiniMax-M2.7-highspeed, MiniMax-M2.1-highspeed |
-| OpenAI 官方 | `https://api.openai.com/v1` | gpt-4o, gpt-4o-mini, gpt-4-turbo |
-| OpenRouter | `https://openrouter.ai/api/v1` | anthropic/claude-sonnet-4-6, openai/gpt-4o |
-| Zhipu AI (GLM) | `https://open.bigmodel.cn/api/paas/v4` | glm-4, glm-4-flash, glm-4-plus |
+| Gemini（Google AI） | `https://generativelanguage.googleapis.com/v1beta` | gemini-3.1-pro, gemini-3.1-flash, gemini-2.5-flash |
+| Kimi（Moonshot AI） | `https://api.moonshot.cn/v1` | moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k, kimi-k2, kimi-k2.5 |
+| MiniMax | `https://api.minimaxi.com/anthropic` | MiniMax-M2.7-highspeed, MiniMax-M2.7, MiniMax-M2.5-highspeed, MiniMax-M2.5 |
+| OpenAI 官方 | `https://api.openai.com/v1` | gpt-4.5, gpt-4.1-mini, gpt-4.1-nano |
+| OpenRouter | `https://openrouter.ai/api/v1` | anthropic/claude-sonnet-4-6, anthropic/claude-opus-4-5, openai/gpt-4.5 |
+| Zhipu AI (GLM) | `https://open.bigmodel.cn/api/paas/v4` | glm-4-plus, glm-5, glm-z1-flash |
 
 > ⚠️ Kimi 的 Base URL 和模型名称建议前往 [platform.moonshot.cn](https://platform.moonshot.cn) 确认最新信息
 
