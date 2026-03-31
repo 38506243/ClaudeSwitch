@@ -473,7 +473,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         // 面板高度：320pt，内容基本垂直居中
         let panelH: CGFloat = 510
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 490, height: panelH),
+            contentRect: NSRect(x: 0, y: 0, width: 495, height: panelH),
             styleMask: [.titled, .closable],
             backing: .buffered, defer: false
         )
@@ -483,7 +483,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         panel.becomesKeyOnlyIfNeeded = true
         sheetPanel = panel
 
-        let vw = NSView(frame: NSRect(x: 0, y: 0, width: 490, height: panelH))
+        let vw = NSView(frame: NSRect(x: 0, y: 0, width: 495, height: panelH))
         panel.contentView = vw
 
         let pad: CGFloat = 20
@@ -593,7 +593,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         // 提示文字
         // 提示文字（y=75，模型ID行底部在130+24=154，gap=79pt）
         let hintLbl = NSTextField(labelWithString: "")
-        hintLbl.frame = NSRect(x: pad, y: 189, width: 440, height: 30)
+        hintLbl.frame = NSRect(x: pad, y: 151, width: 455, height: 30)
         hintLbl.font = NSFont.systemFont(ofSize: 11)
         hintLbl.textColor = .secondaryLabelColor
         hintLbl.stringValue = "提示: 选择预设厂商可自动填充 Base URL 和模型下拉列表。Token 留空使用全局 Token。"
@@ -601,18 +601,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         vw.addSubview(hintLbl)
 
         // 按钮
-        let by: CGFloat = 153
+        let by: CGFloat = 115
 
         let saveBtn = NSButton(title: mode == .add ? "添加" : "保存", target: self, action: #selector(sheetSave(_:)))
         saveBtn.bezelStyle = .rounded
-        saveBtn.frame = NSRect(x: 480 - pad - 160, y: by, width: 70, height: 28)
+        saveBtn.frame = NSRect(x: 495 - pad - 160, y: by, width: 70, height: 28)
         saveBtn.keyEquivalent = "\r"
         saveBtn.tag = mode == .add ? 100 : 200
         vw.addSubview(saveBtn)
 
         let cancelBtn = NSButton(title: "取消", target: self, action: #selector(sheetCancel(_:)))
         cancelBtn.bezelStyle = .rounded
-        cancelBtn.frame = NSRect(x: 480 - pad - 80, y: by, width: 60, height: 28)
+        cancelBtn.frame = NSRect(x: 495 - pad - 80, y: by, width: 60, height: 28)
         cancelBtn.keyEquivalent = "\u{1b}"
         vw.addSubview(cancelBtn)
 
