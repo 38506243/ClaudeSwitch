@@ -1,8 +1,10 @@
+# ClaudeSwitch.app (built artifact, not tracked)
+*.app/
+
 # Build output
 src/bin/
 src/obj/
-*.app/Contents/MacOS/*
-!.app/Contents/Info.plist
+macmenu/ClaudeSwitchMenu
 
 # macOS
 .DS_Store

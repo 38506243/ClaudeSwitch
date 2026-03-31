@@ -53,8 +53,7 @@ private let PRESET_PROVIDERS: [PresetProvider] = [
 ]
 
 // MARK: - 模型配置项
-struct ModelItem: Codable, Identifiable
-{
+struct ModelItem: Codable, Identifiable {
     var id: String
     var name: String
     var baseUrl: String
@@ -72,8 +71,7 @@ struct ModelItem: Codable, Identifiable
 }
 
 // MARK: - App Delegate
-class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
-{
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var statusItem: NSStatusItem!
     var models: [ModelItem] = []
     private let configDir: URL
@@ -91,8 +89,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
     private var sheetEditingId: String?
     private var sheetPanel: NSPanel!
 
-    override init()
-    {
+    // 上次选择的 Claude Code 项目目录
+    private var lastProjectPath: String = ""
+    // 当前预设厂商下拉选中的索引（-1=自定义，0+=PRESET_PROVIDERS索引）
+    private var sheetSelectedProviderIdx: Int = -1
+
+    override init() {
         let home = FileManager.default.homeDirectoryForCurrentUser
         configDir = home.appendingPathComponent(".claude/model-switcher")
         configPath = configDir.appendingPathComponent("models.json")
@@ -100,8 +102,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         super.init()
     }
 
-    func applicationDidFinishLaunching(_ notification: Notification)
-    {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // 多实例保护
         let bid = Bundle.main.bundleIdentifier ?? ""
         if !bid.isEmpty && NSRunningApplication.runningApplications(withBundleIdentifier: bid).count > 1 {
             NSApp.terminate(nil)
@@ -109,6 +111,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         }
 
         NSApp.setActivationPolicy(.accessory)
+
+        // 设置 App 图标（🧠 图案）
+        setupAppIcon()
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let btn = statusItem.button {
@@ -122,6 +128,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
 
         ensureConfigDir()
         loadDefaultToken()
+        loadLastProjectPath()
         loadModels()
 
         if let active = models.first(where: { $0.isActive }) {
@@ -129,15 +136,53 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         }
     }
 
-    private func ensureConfigDir()
-    {
+    // MARK: - App 图标设置（蓝色白字 C）
+    private func setupAppIcon() {
+        let size = NSSize(width: 128, height: 128)
+        let icon = NSImage(size: size, flipped: false) { rect in
+            // 蓝色渐变背景
+            let colors = [NSColor(red: 0.15, green: 0.45, blue: 0.98, alpha: 1.0),
+                          NSColor(red: 0.25, green: 0.20, blue: 0.95, alpha: 1.0)]
+            let gradient = NSGradient(colors: colors)
+            let cpath = NSBezierPath(roundedRect: rect, xRadius: 28, yRadius: 28)
+            gradient?.draw(in: cpath, angle: 135)
+
+            // 白色字母 C
+            let para = NSMutableParagraphStyle()
+            para.alignment = .center
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 80, weight: .bold),
+                .foregroundColor: NSColor.white,
+                .paragraphStyle: para
+            ]
+            let C = "C"
+            C.draw(in: rect.insetBy(dx: 8, dy: rect.height * 0.12), withAttributes: attrs)
+            return true
+        }
+        NSApp.applicationIconImage = icon
+    }
+
+    private func ensureConfigDir() {
         if !FileManager.default.fileExists(atPath: configDir.path) {
             try? FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
         }
     }
 
-    private func loadDefaultToken()
-    {
+    private var lastProjectPathURL: URL {
+        configDir.appendingPathComponent("lastProjectPath.txt")
+    }
+
+    private func loadLastProjectPath() {
+        let url = lastProjectPathURL
+        lastProjectPath = (try? String(contentsOf: url, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    private func saveLastProjectPath(_ path: String) {
+        lastProjectPath = path
+        try? path.write(to: lastProjectPathURL, atomically: true, encoding: .utf8)
+    }
+
+    private func loadDefaultToken() {
         guard FileManager.default.fileExists(atPath: settingsPath.path) else { return }
         do {
             let data = try Data(contentsOf: settingsPath)
@@ -149,8 +194,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         } catch { }
     }
 
-    private func loadModels()
-    {
+    private func loadModels() {
         if !FileManager.default.fileExists(atPath: configPath.path) {
             var dm = ModelItem.defaultMiniMax
             dm.apiToken = defaultToken
@@ -191,8 +235,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         }
     }
 
-    private func saveModels()
-    {
+    private func saveModels() {
         do {
             let data = try JSONEncoder().encode(models)
             try data.write(to: configPath, options: .atomic)
@@ -200,14 +243,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
     }
 
     // MARK: - 菜单构建
-    func menuWillOpen(_ menu: NSMenu)
-    {
+    func menuWillOpen(_ menu: NSMenu) {
         loadModels()
         buildMenu(menu)
     }
 
-    private func buildMenu(_ menu: NSMenu)
-    {
+    private func buildMenu(_ menu: NSMenu) {
         menu.removeAllItems()
 
         for model in models {
@@ -242,6 +283,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         }
 
         let launchItem = NSMenuItem(title: "启动 Claude Code ->", action: #selector(launchClaude), keyEquivalent: "")
+        if !lastProjectPath.isEmpty {
+            let displayPath = (lastProjectPath as NSString).lastPathComponent
+            launchItem.title = "启动 Claude Code: \(displayPath)"
+        }
         launchItem.target = self
         menu.addItem(launchItem)
         menu.addItem(NSMenuItem.separator())
@@ -250,8 +295,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         menu.addItem(quitItem)
     }
 
-    @objc private func selectModel(_ sender: NSMenuItem)
-    {
+    @objc private func selectModel(_ sender: NSMenuItem) {
         guard var model = sender.representedObject as? ModelItem else { return }
         if model.apiToken.isEmpty { model.apiToken = defaultToken }
         applyModel(model)
@@ -259,8 +303,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         launchTerminal()
     }
 
-    private func applyModel(_ model: ModelItem)
-    {
+    private func applyModel(_ model: ModelItem) {
         let settings: [String: Any] = [
             "env": [
                 "ANTHROPIC_BASE_URL": model.baseUrl,
@@ -290,12 +333,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
 
     private enum SheetMode { case add, edit }
 
-    private func showSheet(mode: SheetMode, existing: ModelItem?)
-    {
+    private func showSheet(mode: SheetMode, existing: ModelItem?) {
         sheetEditingId = existing?.id
+        sheetSelectedProviderIdx = -1
 
+        // 面板高度：添加模式 510，编辑模式 510
+        let panelH: CGFloat = 510
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 430),
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: panelH),
             styleMask: [.titled, .closable],
             backing: .buffered, defer: false
         )
@@ -305,7 +350,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         panel.becomesKeyOnlyIfNeeded = true
         sheetPanel = panel
 
-        let vw = NSView(frame: panel.contentView!.bounds)
+        let vw = NSView(frame: NSRect(x: 0, y: 0, width: 480, height: panelH))
         panel.contentView = vw
 
         let pad: CGFloat = 20
@@ -313,7 +358,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         let fw: CGFloat = 340
         let fh: CGFloat = 24
         let gy: CGFloat = 38
-        let startY: CGFloat = 380
+        let startY: CGFloat = 470
 
         // 第1行：预设厂商下拉框
         let providerLbl = NSTextField(labelWithString: "预设厂商:")
@@ -344,59 +389,73 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
 
         // 第3行：Base URL
         let urlLbl = NSTextField(labelWithString: "Base URL:")
-        urlLbl.frame = NSRect(x: pad, y: startY - gy*2 + 2, width: lw, height: fh)
+        urlLbl.frame = NSRect(x: pad, y: startY - gy * 2 + 2, width: lw, height: fh)
         urlLbl.alignment = .right
         vw.addSubview(urlLbl)
 
         sheetUrlField = NSTextField()
-        sheetUrlField.frame = NSRect(x: pad + lw + 8, y: startY - gy*2, width: fw, height: fh)
+        sheetUrlField.frame = NSRect(x: pad + lw + 8, y: startY - gy * 2, width: fw, height: fh)
         sheetUrlField.placeholderString = "https://api.xxx.com/anthropic"
         sheetUrlField.stringValue = existing?.baseUrl ?? ""
         vw.addSubview(sheetUrlField)
 
-        // 第4行：API Token
+        // 第4行：API Token（多行，5行高度）
         let tokenLbl = NSTextField(labelWithString: "API Token:")
-        tokenLbl.frame = NSRect(x: pad, y: startY - gy*3 + 2, width: lw, height: fh)
+        tokenLbl.frame = NSRect(x: pad, y: startY - gy * 3 + 2, width: lw, height: fh)
         tokenLbl.alignment = .right
         vw.addSubview(tokenLbl)
 
+        let tokenFieldH: CGFloat = 110  // 5行高度
         let existingToken = (existing?.apiToken ?? "").isEmpty ? defaultToken : (existing?.apiToken ?? "")
         sheetTokenField = NSTextField()
-        sheetTokenField.frame = NSRect(x: pad + lw + 8, y: startY - gy*3, width: fw, height: fh)
+        sheetTokenField.frame = NSRect(x: pad + lw + 8, y: startY - gy * 3 - tokenFieldH + fh, width: fw, height: tokenFieldH)
         sheetTokenField.placeholderString = "sk-... (留空使用全局Token)"
         sheetTokenField.stringValue = existingToken
+        sheetTokenField.cell?.wraps = true
+        sheetTokenField.cell?.isScrollable = false
+        sheetTokenField.isEditable = true
+        sheetTokenField.isBordered = true
+        sheetTokenField.font = NSFont.systemFont(ofSize: 12)
         vw.addSubview(sheetTokenField)
 
-        // 第5行：模型 ID（左侧输入 + 右侧快捷下拉）
+        // 第5行：模型 ID
         let modelLbl = NSTextField(labelWithString: "模型 ID:")
-        modelLbl.frame = NSRect(x: pad, y: startY - gy*4 + 2, width: lw, height: fh)
+        modelLbl.frame = NSRect(x: pad, y: startY - gy * 4 - tokenFieldH + fh + 4, width: lw, height: fh)
         modelLbl.alignment = .right
         vw.addSubview(modelLbl)
 
         sheetModelField = NSTextField()
-        sheetModelField.frame = NSRect(x: pad + lw + 8, y: startY - gy*4, width: fw - 100, height: fh)
+        sheetModelField.frame = NSRect(x: pad + lw + 8, y: startY - gy * 4 - tokenFieldH + fh + 4, width: fw - 100, height: fh)
         sheetModelField.placeholderString = "例如: MiniMax-M2.7-highspeed"
         sheetModelField.stringValue = existing?.modelId ?? ""
         vw.addSubview(sheetModelField)
 
-        // 模型 ID 快捷下拉
-        sheetModelPopup = NSPopUpButton(frame: NSRect(x: pad + lw + 8 + fw - 98, y: startY - gy*4, width: 96, height: fh))
-        sheetModelPopup.addItem(withTitle: "从预设选")
-        for p in PRESET_PROVIDERS {
-            for m in p.models {
-                sheetModelPopup.addItem(withTitle: m)
-            }
-        }
+        // 模型 ID 快捷下拉（根据当前选中的预设厂商动态过滤）
+        let modelPopupX = pad + lw + 8 + fw - 96
+        let modelPopupY = startY - gy * 4 - tokenFieldH + fh + 4
+        sheetModelPopup = NSPopUpButton(frame: NSRect(x: modelPopupX, y: modelPopupY, width: 96, height: fh))
+        rebuildModelPopup(idx: -1, selectedModelId: existing?.modelId)
         sheetModelPopup.target = self
         sheetModelPopup.action = #selector(modelPopupChanged(_:))
         vw.addSubview(sheetModelPopup)
+
+        // 如果现有配置匹配某个预设厂商，自动选中它
+        if let existingUrl = existing?.baseUrl, !existingUrl.isEmpty {
+            for (idx, p) in PRESET_PROVIDERS.enumerated() {
+                if p.baseUrl == existingUrl {
+                    sheetProviderPopup.selectItem(at: idx + 1)
+                    sheetSelectedProviderIdx = idx
+                    break
+                }
+            }
+        }
 
         // 提示文字
         let hintLbl = NSTextField(labelWithString: "")
         hintLbl.frame = NSRect(x: pad, y: 58, width: 440, height: 30)
         hintLbl.font = NSFont.systemFont(ofSize: 11)
         hintLbl.textColor = .secondaryLabelColor
-        hintLbl.stringValue = "提示: 选择预设厂商可自动填充Base URL。Token留空使用全局Token。模型ID可从右侧下拉选择或手动输入。"
+        hintLbl.stringValue = "提示: 选择预设厂商可自动填充 Base URL 和模型下拉列表。Token 留空使用全局 Token。"
         hintLbl.lineBreakMode = .byWordWrapping
         vw.addSubview(hintLbl)
 
@@ -429,29 +488,63 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    // 预设厂商下拉选择变化 → 自动填充 Base URL
-    @objc private func providerPopupChanged(_ sender: NSPopUpButton)
-    {
-        let idx = sender.indexOfSelectedItem - 1
-        guard idx >= 0 && idx < PRESET_PROVIDERS.count else { return }
-        let provider = PRESET_PROVIDERS[idx]
-        sheetUrlField.stringValue = provider.baseUrl
-        if sheetNameField.stringValue.isEmpty {
-            sheetNameField.stringValue = provider.name
+    // 根据预设厂商索引重建模型 ID 下拉列表
+    private func rebuildModelPopup(idx: Int, selectedModelId: String? = nil) {
+        sheetModelPopup.removeAllItems()
+        sheetModelPopup.addItem(withTitle: "从预设选")
+
+        if idx >= 0 && idx < PRESET_PROVIDERS.count {
+            let provider = PRESET_PROVIDERS[idx]
+            for modelId in provider.models {
+                sheetModelPopup.addItem(withTitle: modelId)
+                if modelId == selectedModelId {
+                    sheetModelPopup.selectItem(withTitle: modelId)
+                }
+            }
+        } else {
+            // 自定义模式：显示所有预设模型（按厂商分组标题）
+            for p in PRESET_PROVIDERS {
+                // 用分隔符形式的分组标题
+                sheetModelPopup.addItem(withTitle: "--- \(p.name) ---")
+                sheetModelPopup.item(at: sheetModelPopup.numberOfItems - 1)?.isEnabled = false
+                for m in p.models {
+                    sheetModelPopup.addItem(withTitle: m)
+                    if m == selectedModelId {
+                        sheetModelPopup.selectItem(withTitle: m)
+                    }
+                }
+            }
         }
     }
 
+    // 预设厂商下拉选择变化 → 自动填充 Base URL + 重建模型下拉
+    @objc private func providerPopupChanged(_ sender: NSPopUpButton) {
+        let idx = sender.indexOfSelectedItem - 1
+        sheetSelectedProviderIdx = idx
+
+        if idx >= 0 && idx < PRESET_PROVIDERS.count {
+            let provider = PRESET_PROVIDERS[idx]
+            sheetUrlField.stringValue = provider.baseUrl
+            if sheetNameField.stringValue.isEmpty {
+                sheetNameField.stringValue = provider.name
+            }
+        }
+
+        // 重建模型 ID 下拉（联动）
+        rebuildModelPopup(idx: idx, selectedModelId: nil)
+        // 清空模型 ID 输入框，等待用户选择
+        sheetModelField.stringValue = ""
+    }
+
     // 模型 ID 下拉选择变化 → 自动填充模型 ID
-    @objc private func modelPopupChanged(_ sender: NSPopUpButton)
-    {
+    @objc private func modelPopupChanged(_ sender: NSPopUpButton) {
         let title = sender.titleOfSelectedItem ?? ""
-        if !title.isEmpty && title != "从预设选" {
+        if !title.isEmpty && title != "从预设选" && !title.hasPrefix("--- ") {
             sheetModelField.stringValue = title
         }
     }
 
-    @objc private func sheetSave(_ sender: NSButton)
-    {
+    @objc private func sheetSave(_ sender: NSButton) {
         let name = sheetNameField.stringValue.trimmingCharacters(in: CharacterSet.whitespaces)
         let url = sheetUrlField.stringValue.trimmingCharacters(in: CharacterSet.whitespaces)
         let token = sheetTokenField.stringValue.trimmingCharacters(in: CharacterSet.whitespaces)
@@ -485,8 +578,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
 
     @objc private func sheetCancel(_ sender: Any) { sheetPanel.close() }
 
-    @objc private func sheetDelete(_ sender: Any)
-    {
+    @objc private func sheetDelete(_ sender: Any) {
         guard let eid = sheetEditingId else { return }
         models.removeAll { $0.id == eid }
         if models.isEmpty {
@@ -499,48 +591,108 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate
         sheetPanel.close()
     }
 
-    // MARK: - 终端
+    // MARK: - 终端启动
     @objc private func launchClaude() { launchTerminal() }
 
-    private func launchTerminal()
-    {
+    private func launchTerminal() {
+        // 弹出目录选择面板
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.prompt = "启动 Claude Code"
+        panel.message = "选择 Claude Code 的项目目录"
+
+        // 默认路径：上次选择的目录，或用户 home
+        if !lastProjectPath.isEmpty {
+            panel.directoryURL = URL(fileURLWithPath: lastProjectPath)
+        } else {
+            panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
+        }
+
+        // 尝试以 sheet 方式显示（附属于 key window）
+        if let keyWin = NSApp.keyWindow {
+            panel.beginSheetModal(for: keyWin) { [weak self] response in
+                guard response == .OK, let url = panel.url else { return }
+                self?.doLaunchTerminal(projectDir: url.path)
+            }
+        } else {
+            // 无 key window 时用普通方式
+            let response = panel.runModal()
+            guard response == .OK, let url = panel.url else { return }
+            doLaunchTerminal(projectDir: url.path)
+        }
+    }
+
+    private func doLaunchTerminal(projectDir: String) {
+        // 保存本次选择的目录
+        saveLastProjectPath(projectDir)
+
         let hasITerm2 = FileManager.default.fileExists(atPath: "/Applications/iTerm2.app")
         let hasITerm = FileManager.default.fileExists(atPath: "/Applications/iTerm.app")
-        let appName = hasITerm2 ? "iTerm2" : (hasITerm ? "iTerm" : nil)
+
+        // 构造 cd && claude 命令
+        let escapedDir = projectDir.replacingOccurrences(of: "\"", with: "\\\"")
+        let shellCmd = "cd \"\(escapedDir)\" && claude"
 
         let script: String
-        if let name = appName {
+        if hasITerm2 || hasITerm {
+            let appName = hasITerm2 ? "iTerm2" : "iTerm"
             script = """
-                tell application "\(name)"
+                tell application "\(appName)"
                     activate
                     try
-                        if (count of windows) > 0 then
-                            tell current window to create tab with default profile
-                        else
-                            create window with default profile
-                        end if
+                        tell current window
+                            create tab with default profile
+                        end tell
                     on error
+                        delay 0.5
                         create window with default profile
                     end try
-                    tell current session of current window to write text "claude"
+                    delay 2.0
+                    tell current session of current window
+                        write text "\(shellCmd.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))"
+                    end tell
                 end tell
                 """
         } else {
             script = """
                 tell application "Terminal"
                     activate
-                    do script "claude"
+                    do script "\(shellCmd)"
                 end tell
                 """
         }
-        var err: NSDictionary?
-        NSAppleScript(source: script)?.executeAndReturnError(&err)
+
+        // 写入临时脚本文件，用 osascript 执行
+        let scriptPath = NSTemporaryDirectory() + "claudeswitch_\(UUID().uuidString).scpt"
+        do {
+            try script.write(toFile: scriptPath, atomically: true, encoding: .utf8)
+        } catch {
+            print("Failed to write script: \(error)")
+            return
+        }
+
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        task.arguments = [scriptPath]
+        task.standardOutput = nil
+        task.standardError = nil
+
+        do {
+            try task.run()
+            task.waitUntilExit()
+        } catch {
+            print("osascript error: \(error)")
+        }
+
+        try? FileManager.default.removeItem(atPath: scriptPath)
     }
 
     @objc private func quitApp() { NSApp.terminate(nil) }
 
-    private func showError(_ msg: String)
-    {
+    private func showError(_ msg: String) {
         DispatchQueue.main.async {
             let a = NSAlert()
             a.messageText = "错误"
