@@ -311,6 +311,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         buildMenu(menu)
     }
 
+    // 公开方法，允许在选择模型后主动刷新菜单
+    private func refreshMenu() {
+        if let menu = statusItem.menu {
+            loadModels()
+            buildMenu(menu)
+        }
+    }
+
     private func buildMenu(_ menu: NSMenu) {
         menu.removeAllItems()
 
