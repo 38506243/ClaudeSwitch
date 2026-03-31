@@ -98,8 +98,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var presetProviders: [PresetProvider] = []
     // 当前预设厂商下拉选中的索引（-1=自定义，0+=presetProviders索引）
     private var sheetSelectedProviderIdx: Int = -1
-    // 待生效的模型切换（选择时记录，菜单下次打开时应用）
-    private var pendingSelectionId: String?
 
     override init() {
         let home = FileManager.default.homeDirectoryForCurrentUser
@@ -309,22 +307,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - 菜单构建
     func menuWillOpen(_ menu: NSMenu) {
-        // 如果有待生效的模型切换，在菜单打开前应用
-        if let pid = pendingSelectionId {
-            loadModels()
-            if let idx = models.firstIndex(where: { $0.id == pid }) {
-                var m = models[idx]
-                if m.apiToken.isEmpty { m.apiToken = defaultToken }
-                // 更新 isActive 状态
-                for i in 0..<models.count {
-                    models[i].isActive = (models[i].id == pid)
-                    if models[i].id == pid { models[i] = m }
-                }
-                saveModels()
-                statusItem.button?.title = "🤖 \(m.name)"
-            }
-            pendingSelectionId = nil
-        }
         buildMenu(menu)
     }
 
@@ -384,37 +366,46 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func selectModel(_ sender: NSMenuItem) {
-        guard let model = sender.representedObject as? ModelItem else { return }
-        // 记录待生效的切换，菜单下次打开时应用（避免 macOS 菜单显示延迟问题）
-        pendingSelectionId = model.id
-        // 立即写入 settings.json（Claude Code 运行时配置）
-        if model.apiToken.isEmpty {
-            applyModelWithoutReload(modelId: model.id, token: defaultToken)
-        } else {
-            applyModelWithoutReload(modelId: model.id, token: model.apiToken)
+        guard let modelId = sender.representedObject as? String ?? (sender.representedObject as? ModelItem).map({ $0.id }) else { return }
+
+        // 1. 从磁盘加载最新 models
+        loadModels()
+
+        // 2. 更新 isActive 状态
+        for i in 0..<models.count {
+            models[i].isActive = (models[i].id == modelId)
         }
+
+        // 3. 立即写入 models.json
+        saveModels()
+
+        // 4. 写入 Claude 配置
+        if let model = models.first(where: { $0.id == modelId }) {
+            let token = model.apiToken.isEmpty ? defaultToken : model.apiToken
+            let settings: [String: Any] = [
+                "env": [
+                    "ANTHROPIC_BASE_URL": model.baseUrl,
+                    "ANTHROPIC_AUTH_TOKEN": token,
+                    "ANTHROPIC_MODEL": model.modelId,
+                    "API_TIMEOUT_MS": "300000",
+                    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1
+                ]
+            ]
+            do {
+                let data = try JSONSerialization.data(withJSONObject: settings, options: [.prettyPrinted, .sortedKeys])
+                try data.write(to: settingsPath, options: .atomic)
+            } catch {
+                showError("写入配置失败: \(error.localizedDescription)")
+                return
+            }
+            statusItem.button?.title = "🤖 \(model.name)"
+        }
+
+        // 5. 打开 iTerm2 执行 claude
         launchTerminal()
     }
 
-    // 仅更新 settings.json，不读写 models 数组（避免和 menuWillOpen 冲突）
-    private func applyModelWithoutReload(modelId: String, token: String) {
-        guard let model = models.first(where: { $0.id == modelId }) else { return }
-        let settings: [String: Any] = [
-            "env": [
-                "ANTHROPIC_BASE_URL": model.baseUrl,
-                "ANTHROPIC_AUTH_TOKEN": token,
-                "ANTHROPIC_MODEL": model.modelId,
-                "API_TIMEOUT_MS": "300000",
-                "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1
-            ]
-        ]
-        do {
-            let data = try JSONSerialization.data(withJSONObject: settings, options: [.prettyPrinted, .sortedKeys])
-            try data.write(to: settingsPath, options: .atomic)
-        } catch {
-            showError("写入配置失败: \(error.localizedDescription)")
-        }
-    }
+
 
     private func applyModel(_ model: ModelItem) {
         let settings: [String: Any] = [
