@@ -471,19 +471,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         sheetSelectedProviderIdx = -1
 
         // 面板高度：320pt，内容基本垂直居中
-        let panelH: CGFloat = 510
+        let panelH: CGFloat = 500
+        let panelW: CGFloat = 500
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 495, height: panelH),
+            contentRect: NSRect(x: 0, y: 0, width: panelW, height: panelH),
             styleMask: [.titled, .closable],
             backing: .buffered, defer: false
         )
         panel.title = mode == .add ? "添加模型" : "编辑模型"
         panel.isFloatingPanel = true
-        panel.level = .floating
+        panel.level = NSWindow.Level.floating
         panel.becomesKeyOnlyIfNeeded = true
         sheetPanel = panel
 
-        let vw = NSView(frame: NSRect(x: 0, y: 0, width: 495, height: panelH))
+        let vw = NSView(frame: NSRect(x: 0, y: 0, width: panelW, height: panelH))
         panel.contentView = vw
 
         let pad: CGFloat = 20
@@ -491,7 +492,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         let fw: CGFloat = 340
         let fh: CGFloat = 24
         let gy: CGFloat = 38
-        let gyBetweenTokenAndModel: CGFloat = 20  // token字段和模型ID之间的额外间距
+        let gyBetweenTokenAndModel: CGFloat = 0  // token字段和模型ID之间的额外间距
         let startY: CGFloat = 460   // 内容顶部（510-460=50pt底部padding）
 
         // 第1行：预设厂商下拉框
@@ -594,7 +595,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         // 提示文字
         // 提示文字（y=75，模型ID行底部在130+24=154，gap=79pt）
         let hintLbl = NSTextField(labelWithString: "")
-        hintLbl.frame = NSRect(x: pad, y: 189, width: 455, height: 30)
+        hintLbl.frame = NSRect(x: pad, y: 180, width: 455, height: 30)
         hintLbl.font = NSFont.systemFont(ofSize: 11)
         hintLbl.textColor = .secondaryLabelColor
         hintLbl.stringValue = "提示: 选择预设厂商可自动填充 Base URL 和模型下拉列表。Token 留空使用全局 Token。"
@@ -626,7 +627,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         }
 
         panel.center()
-        panel.makeKeyAndOrderFront(nil)
+        panel.makeKeyAndOrderFront(self)
         NSApp.activate(ignoringOtherApps: true)
         // 挂载 Edit 菜单，使 Cmd+V 等快捷键在文本框内生效
         installEditMenu()
