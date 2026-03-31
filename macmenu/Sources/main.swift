@@ -321,7 +321,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(NSMenuItem.separator())
 
         // 开机自启动开关
-        let loginItem = NSMenuItem(title: launchAtLogin ? "✔ 开机自启动" : "   开机自启动",
+        let loginItem = NSMenuItem(title: launchAtLogin ? "✓ 开机自启动" : "   开机自启动",
                                    action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
         loginItem.target = self
         menu.addItem(loginItem)
