@@ -406,7 +406,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         vw.addSubview(tokenLbl)
 
         let tokenFieldH: CGFloat = 110  // 5行高度
-        let existingToken = (existing?.apiToken ?? "").isEmpty ? defaultToken : (existing?.apiToken ?? "")
+        // 添加模式：Token 默认为空；编辑模式：显示已有 Token（空时用全局 Token 填充）
+        let existingToken = (mode == .add) ? "" : ((existing?.apiToken ?? "").isEmpty ? defaultToken : (existing?.apiToken ?? ""))
         sheetTokenField = NSTextField()
         sheetTokenField.frame = NSRect(x: pad + lw + 8, y: startY - gy * 3 - tokenFieldH + fh, width: fw, height: tokenFieldH)
         sheetTokenField.placeholderString = "sk-... (留空使用全局Token)"
