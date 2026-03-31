@@ -460,8 +460,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         sheetEditingId = existing?.id
         sheetSelectedProviderIdx = -1
 
-        // 面板高度：添加模式 510，编辑模式 510
-        let panelH: CGFloat = 510
+        // 面板高度：320pt，内容基本垂直居中
+        let panelH: CGFloat = 320
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 480, height: panelH),
             styleMask: [.titled, .closable],
@@ -481,7 +481,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let fw: CGFloat = 340
         let fh: CGFloat = 24
         let gy: CGFloat = 38
-        let startY: CGFloat = 470
+        let startY: CGFloat = 270   // 内容顶部（270-18=252pt 距底，顶部 pad=18pt，基本居中）
 
         // 第1行：预设厂商下拉框
         let providerLbl = NSTextField(labelWithString: "预设厂商:")
