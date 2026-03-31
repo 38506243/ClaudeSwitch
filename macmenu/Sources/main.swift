@@ -371,6 +371,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if model.apiToken.isEmpty { model.apiToken = defaultToken }
         applyModel(model)
         statusItem.button?.title = "🤖 \(model.name)"
+        // 立即刷新菜单，使打勾状态在下次打开时正确显示
+        if let menu = statusItem.menu {
+            buildMenu(menu)
+        }
         launchTerminal()
     }
 
