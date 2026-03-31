@@ -471,9 +471,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         sheetSelectedProviderIdx = -1
 
         // 面板高度：320pt，内容基本垂直居中
-        let panelH: CGFloat = 450
+        let panelH: CGFloat = 510
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 485, height: panelH),
+            contentRect: NSRect(x: 0, y: 0, width: 490, height: panelH),
             styleMask: [.titled, .closable],
             backing: .buffered, defer: false
         )
@@ -483,7 +483,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         panel.becomesKeyOnlyIfNeeded = true
         sheetPanel = panel
 
-        let vw = NSView(frame: NSRect(x: 0, y: 0, width: 485, height: panelH))
+        let vw = NSView(frame: NSRect(x: 0, y: 0, width: 490, height: panelH))
         panel.contentView = vw
 
         let pad: CGFloat = 20
