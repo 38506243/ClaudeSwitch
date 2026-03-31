@@ -45,14 +45,14 @@
 
 ### 2.5 启动 Claude Code
 - 点击「启动 Claude Code」→ NSOpenPanel 弹出目录选择框
-- 目录路径持久化到 `~/.claude/settings.json`，下次打开面板时默认定位于上次选择的目录
+- 目录路径持久化到 `~/.claude/model-switcher/settings.json`，下次打开面板时默认定位于上次选择的目录
 - 菜单项标题动态显示当前目录名（如 `启动 Claude Code: myproject`）
 - iTerm2/Terminal cd 进去后执行 claude
 
 ### 2.6 开机自启动
 - 菜单提供「开机自启动」开关（✔ 标记开启状态）
 - 开启后调用 SMAppService（macOS 13+）注册登录项
-- 状态同时持久化到 `~/.claude/settings.json`
+- 状态同时持久化到 `~/.claude/model-switcher/settings.json`
 
 ### 2.7 终端自动选择
 | 优先级 | 应用 |
@@ -110,10 +110,10 @@
 - 模型 Token 为空时，自动从 `~/.claude/settings.json` 读取已有 Token
 
 ### 3.4 上次项目目录
-- 保存在 `~/.claude/settings.json` 的 `lastProjectPath` 字段
+- 保存在 `~/.claude/model-switcher/settings.json` 的 `lastProjectPath` 字段
 
 ### 3.5 开机自启动
-- 保存在 `~/.claude/settings.json` 的 `launchAtLogin` 字段
+- 保存在 `~/.claude/model-switcher/settings.json` 的 `launchAtLogin` 字段
 - 由 SMAppService.mainApp（macOS 13+）实际注册登录项
 
 ---
