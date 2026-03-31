@@ -2,15 +2,15 @@ import AppKit
 import Foundation
 import ServiceManagement
 
-// MARK: - 预设厂商数据
-struct PresetProvider {
-    let name: String       // 厂商显示名称
-    let baseUrl: String    // API Base URL
-    let models: [String]   // 支持的模型 ID 列表
+// MARK: - 预设厂商数据（可序列化，支持持久化到 providers.json）
+struct PresetProvider: Codable {
+    var name: String       // 厂商显示名称
+    var baseUrl: String    // API Base URL
+    var models: [String]   // 支持的模型 ID 列表
 }
 
-// MARK: - 内置预设厂商列表（按字母排序）
-private let PRESET_PROVIDERS: [PresetProvider] = [
+// MARK: - 内置默认预设厂商列表（首次运行写入 providers.json，后续从文件读取）
+private let DEFAULT_PRESET_PROVIDERS: [PresetProvider] = [
     PresetProvider(
         name: "Anthropic 官方",
         baseUrl: "https://api.anthropic.com",
@@ -94,7 +94,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var lastProjectPath: String = ""
     // 是否开机自启动（存储在 settings.json）
     private var launchAtLogin: Bool = false
-    // 当前预设厂商下拉选中的索引（-1=自定义，0+=PRESET_PROVIDERS索引）
+    // 预设厂商列表（从 providers.json 加载）
+    private var presetProviders: [PresetProvider] = []
+    // 当前预设厂商下拉选中的索引（-1=自定义，0+=presetProviders索引）
     private var sheetSelectedProviderIdx: Int = -1
 
     override init() {
@@ -132,6 +134,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ensureConfigDir()
         loadDefaultToken()
         loadPreferences()
+        loadPresetProviders()
         loadModels()
 
         if let active = models.first(where: { $0.isActive }) {
@@ -174,6 +177,37 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // App 配置存储路径（~/.claude/model-switcher/settings.json）
     private var appSettingsPath: URL {
         configDir.appendingPathComponent("settings.json")
+    }
+
+    // 预设厂商列表存储路径（~/.claude/model-switcher/providers.json）
+    private var providersURL: URL {
+        configDir.appendingPathComponent("providers.json")
+    }
+
+    // 从 providers.json 加载预设厂商列表；文件不存在时写入默认列表
+    private func loadPresetProviders() {
+        if FileManager.default.fileExists(atPath: providersURL.path) {
+            do {
+                let data = try Data(contentsOf: providersURL)
+                presetProviders = try JSONDecoder().decode([PresetProvider].self, from: data)
+            } catch {
+                print("Load providers failed, using defaults: \(error)")
+                presetProviders = DEFAULT_PRESET_PROVIDERS
+                savePresetProviders()
+            }
+        } else {
+            presetProviders = DEFAULT_PRESET_PROVIDERS
+            savePresetProviders()
+        }
+    }
+
+    private func savePresetProviders() {
+        do {
+            let data = try JSONEncoder().encode(presetProviders)
+            try data.write(to: providersURL, options: .atomic)
+        } catch {
+            print("Save providers failed: \(error)")
+        }
     }
 
     // 从 model-switcher/settings.json 加载 launchAtLogin 和 lastProjectPath
@@ -405,7 +439,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         sheetProviderPopup = NSPopUpButton(frame: NSRect(x: pad + lw + 8, y: startY, width: fw, height: fh))
         sheetProviderPopup.addItem(withTitle: "- 自定义（手动输入URL） -")
-        for p in PRESET_PROVIDERS {
+        for p in presetProviders {
             sheetProviderPopup.addItem(withTitle: p.name)
         }
         sheetProviderPopup.target = self
@@ -479,7 +513,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // 如果现有配置匹配某个预设厂商，自动选中它并重建模型下拉
         var matchedProviderIdx = -1
         if let existingUrl = existing?.baseUrl, !existingUrl.isEmpty {
-            for (idx, p) in PRESET_PROVIDERS.enumerated() {
+            for (idx, p) in presetProviders.enumerated() {
                 if p.baseUrl == existingUrl {
                     sheetProviderPopup.selectItem(at: idx + 1)
                     sheetSelectedProviderIdx = idx
@@ -533,8 +567,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         sheetModelPopup.removeAllItems()
         sheetModelPopup.addItem(withTitle: "从预设选")
 
-        if idx >= 0 && idx < PRESET_PROVIDERS.count {
-            let provider = PRESET_PROVIDERS[idx]
+        if idx >= 0 && idx < presetProviders.count {
+            let provider = presetProviders[idx]
             for modelId in provider.models {
                 sheetModelPopup.addItem(withTitle: modelId)
                 if modelId == selectedModelId {
@@ -543,7 +577,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         } else {
             // 自定义模式：显示所有预设模型（按厂商分组标题）
-            for p in PRESET_PROVIDERS {
+            for p in presetProviders {
                 // 用分隔符形式的分组标题
                 sheetModelPopup.addItem(withTitle: "--- \(p.name) ---")
                 sheetModelPopup.item(at: sheetModelPopup.numberOfItems - 1)?.isEnabled = false
@@ -562,8 +596,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let idx = sender.indexOfSelectedItem - 1
         sheetSelectedProviderIdx = idx
 
-        if idx >= 0 && idx < PRESET_PROVIDERS.count {
-            let provider = PRESET_PROVIDERS[idx]
+        if idx >= 0 && idx < presetProviders.count {
+            let provider = presetProviders[idx]
             sheetUrlField.stringValue = provider.baseUrl
             if sheetNameField.stringValue.isEmpty {
                 sheetNameField.stringValue = provider.name
