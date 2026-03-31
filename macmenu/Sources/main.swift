@@ -171,11 +171,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // 从 settings.json 加载 launchAtLogin 和 lastProjectPath
+    // App 配置存储路径（~/.claude/model-switcher/settings.json）
+    private var appSettingsPath: URL {
+        configDir.appendingPathComponent("settings.json")
+    }
+
+    // 从 model-switcher/settings.json 加载 launchAtLogin 和 lastProjectPath
     private func loadPreferences() {
-        guard FileManager.default.fileExists(atPath: settingsPath.path) else { return }
+        guard FileManager.default.fileExists(atPath: appSettingsPath.path) else { return }
         do {
-            let data = try Data(contentsOf: settingsPath)
+            let data = try Data(contentsOf: appSettingsPath)
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 launchAtLogin = json["launchAtLogin"] as? Bool ?? false
                 lastProjectPath = json["lastProjectPath"] as? String ?? ""
@@ -183,17 +188,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } catch { }
     }
 
-    // 将 launchAtLogin 和 lastProjectPath 写入 settings.json（合并保留 env 等其他字段）
+    // 将 launchAtLogin 和 lastProjectPath 写入 model-switcher/settings.json
     private func savePreferences() {
-        guard FileManager.default.fileExists(atPath: settingsPath.path) else { return }
+        let json: [String: Any] = [
+            "launchAtLogin": launchAtLogin,
+            "lastProjectPath": lastProjectPath
+        ]
         do {
-            var json: [String: Any] = [:]
-            let data = try Data(contentsOf: settingsPath)
-            json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
-            json["launchAtLogin"] = launchAtLogin
-            json["lastProjectPath"] = lastProjectPath
-            let newData = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
-            try newData.write(to: settingsPath, options: .atomic)
+            let data = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: appSettingsPath, options: .atomic)
         } catch {
             print("Save preferences failed: \(error)")
         }
