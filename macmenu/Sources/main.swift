@@ -597,7 +597,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         // 提示文字
         // 提示文字（y=75，模型ID行底部在130+24=154，gap=79pt）
         let hintLbl = NSTextField(labelWithString: "")
-        hintLbl.frame = NSRect(x: pad, y: 70, width: 455, height: 30)
+        hintLbl.frame = NSRect(x: pad * 5, y: 70, width: 455, height: 30)
         hintLbl.font = NSFont.systemFont(ofSize: 11)
         hintLbl.textColor = .secondaryLabelColor
         hintLbl.stringValue = "提示: 选择预设厂商可自动填充 Base URL 和模型下拉列表。Token 留空使用全局 Token。"
