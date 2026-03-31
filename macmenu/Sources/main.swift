@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import ServiceManagement
 
 // MARK: - 预设厂商数据
 struct PresetProvider {
@@ -89,8 +90,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var sheetEditingId: String?
     private var sheetPanel: NSPanel!
 
-    // 上次选择的 Claude Code 项目目录
+    // 上次选择的 Claude Code 项目目录（存储在 settings.json）
     private var lastProjectPath: String = ""
+    // 是否开机自启动（存储在 settings.json）
+    private var launchAtLogin: Bool = false
     // 当前预设厂商下拉选中的索引（-1=自定义，0+=PRESET_PROVIDERS索引）
     private var sheetSelectedProviderIdx: Int = -1
 
@@ -128,7 +131,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         ensureConfigDir()
         loadDefaultToken()
-        loadLastProjectPath()
+        loadPreferences()
         loadModels()
 
         if let active = models.first(where: { $0.isActive }) {
@@ -168,18 +171,41 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    private var lastProjectPathURL: URL {
-        configDir.appendingPathComponent("lastProjectPath.txt")
+    // 从 settings.json 加载 launchAtLogin 和 lastProjectPath
+    private func loadPreferences() {
+        guard FileManager.default.fileExists(atPath: settingsPath.path) else { return }
+        do {
+            let data = try Data(contentsOf: settingsPath)
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                launchAtLogin = json["launchAtLogin"] as? Bool ?? false
+                lastProjectPath = json["lastProjectPath"] as? String ?? ""
+            }
+        } catch { }
+    }
+
+    // 将 launchAtLogin 和 lastProjectPath 写入 settings.json（合并保留 env 等其他字段）
+    private func savePreferences() {
+        guard FileManager.default.fileExists(atPath: settingsPath.path) else { return }
+        do {
+            var json: [String: Any] = [:]
+            let data = try Data(contentsOf: settingsPath)
+            json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+            json["launchAtLogin"] = launchAtLogin
+            json["lastProjectPath"] = lastProjectPath
+            let newData = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
+            try newData.write(to: settingsPath, options: .atomic)
+        } catch {
+            print("Save preferences failed: \(error)")
+        }
     }
 
     private func loadLastProjectPath() {
-        let url = lastProjectPathURL
-        lastProjectPath = (try? String(contentsOf: url, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        // lastProjectPath 已由 loadPreferences() 加载
     }
 
     private func saveLastProjectPath(_ path: String) {
         lastProjectPath = path
-        try? path.write(to: lastProjectPathURL, atomically: true, encoding: .utf8)
+        savePreferences()
     }
 
     private func loadDefaultToken() {
@@ -290,6 +316,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         launchItem.target = self
         menu.addItem(launchItem)
         menu.addItem(NSMenuItem.separator())
+
+        // 开机自启动开关
+        let loginItem = NSMenuItem(title: launchAtLogin ? "✔ 开机自启动" : "   开机自启动",
+                                   action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        loginItem.target = self
+        menu.addItem(loginItem)
+        menu.addItem(NSMenuItem.separator())
+
         let quitItem = NSMenuItem(title: "退出 Claude Switch", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -694,6 +728,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func quitApp() { NSApp.terminate(nil) }
+
+    @objc private func toggleLaunchAtLogin() {
+        launchAtLogin.toggle()
+        savePreferences()
+
+        // 调用 SMAppService 实际注册/取消登录项（macOS 13+）
+        if #available(macOS 13.0, *) {
+            let service = SMAppService.mainApp
+            do {
+                if launchAtLogin {
+                    try service.register()
+                } else {
+                    try service.unregister()
+                }
+            } catch {
+                print("SMAppService error: \(error)")
+                // SMAppService 失败时回写状态
+                launchAtLogin.toggle()
+                savePreferences()
+                showError("开机自启动设置失败：\(error.localizedDescription)")
+            }
+        }
+    }
 
     private func showError(_ msg: String) {
         DispatchQueue.main.async {
