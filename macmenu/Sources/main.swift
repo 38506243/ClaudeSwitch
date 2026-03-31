@@ -491,6 +491,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         let fw: CGFloat = 340
         let fh: CGFloat = 24
         let gy: CGFloat = 38
+        let gyBetweenTokenAndModel: CGFloat = 20  // token字段和模型ID之间的额外间距
         let startY: CGFloat = 460   // 内容顶部（510-460=50pt底部padding）
 
         // 第1行：预设厂商下拉框
@@ -558,19 +559,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
 
         // 第5行：模型 ID
         let modelLbl = NSTextField(labelWithString: "模型 ID:")
-        modelLbl.frame = NSRect(x: pad, y: startY - gy * 4 - tokenFieldH + fh + 4, width: lw, height: fh)
+        modelLbl.frame = NSRect(x: pad, y: startY - gy * 4 - tokenFieldH + fh + 4 - gyBetweenTokenAndModel, width: lw, height: fh)
         modelLbl.alignment = .right
         vw.addSubview(modelLbl)
 
         sheetModelField = NSTextField()
-        sheetModelField.frame = NSRect(x: pad + lw + 8, y: startY - gy * 4 - tokenFieldH + fh + 4, width: fw - 100, height: fh)
+        sheetModelField.frame = NSRect(x: pad + lw + 8, y: startY - gy * 4 - tokenFieldH + fh + 4 - gyBetweenTokenAndModel, width: fw - 100, height: fh)
         sheetModelField.placeholderString = "例如: MiniMax-M2.7-highspeed"
         sheetModelField.stringValue = existing?.modelId ?? ""
         vw.addSubview(sheetModelField)
 
         // 模型 ID 快捷下拉（先以自定义模式初始化，后续会根据匹配结果重建）
         let modelPopupX = pad + lw + 8 + fw - 96
-        let modelPopupY = startY - gy * 4 - tokenFieldH + fh + 4
+        let modelPopupY = startY - gy * 4 - tokenFieldH + fh + 4 - gyBetweenTokenAndModel
         sheetModelPopup = NSPopUpButton(frame: NSRect(x: modelPopupX, y: modelPopupY, width: 96, height: fh))
         sheetModelPopup.target = self
         sheetModelPopup.action = #selector(modelPopupChanged(_:))
@@ -593,7 +594,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         // 提示文字
         // 提示文字（y=75，模型ID行底部在130+24=154，gap=79pt）
         let hintLbl = NSTextField(labelWithString: "")
-        hintLbl.frame = NSRect(x: pad, y: 151, width: 455, height: 30)
+        hintLbl.frame = NSRect(x: pad, y: 189, width: 455, height: 30)
         hintLbl.font = NSFont.systemFont(ofSize: 11)
         hintLbl.textColor = .secondaryLabelColor
         hintLbl.stringValue = "提示: 选择预设厂商可自动填充 Base URL 和模型下拉列表。Token 留空使用全局 Token。"
@@ -601,7 +602,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         vw.addSubview(hintLbl)
 
         // 按钮
-        let by: CGFloat = 115
+        let by: CGFloat = 153
 
         let saveBtn = NSButton(title: mode == .add ? "添加" : "保存", target: self, action: #selector(sheetSave(_:)))
         saveBtn.bezelStyle = .rounded
