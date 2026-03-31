@@ -471,7 +471,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         sheetSelectedProviderIdx = -1
 
         // 面板高度：320pt，内容基本垂直居中
-        let panelH: CGFloat = 460
+        let panelH: CGFloat = 500
         let panelW: CGFloat = 500
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: panelW, height: panelH),
@@ -492,7 +492,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         let fw: CGFloat = 340
         let fh: CGFloat = 24
         let gy: CGFloat = 38
-        let startY: CGFloat = 460   // 内容顶部（510-460=50pt底部padding）
+        let startY: CGFloat = 480   // 内容顶部（510-460=50pt底部padding）
 
         // 第1行：预设厂商下拉框
         let providerLbl = NSTextField(labelWithString: "预设厂商:")
