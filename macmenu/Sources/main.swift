@@ -33,7 +33,7 @@ private let PRESET_PROVIDERS: [PresetProvider] = [
     PresetProvider(
         name: "MiniMax",
         baseUrl: "https://api.minimaxi.com/anthropic",
-        models: ["MiniMax-M2.7-highspeed", "MiniMax-M2.5-highspeed", "MiniMax-M2.5"]
+        models: ["MiniMax-M2.7-highspeed", "MiniMax-M2.7", "MiniMax-M2.5-highspeed", "MiniMax-M2.5"]
     ),
     PresetProvider(
         name: "OpenAI 官方",
