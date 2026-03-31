@@ -252,7 +252,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.removeAllItems()
 
         for model in models {
-            let title = model.isActive ? "✔ \(model.name)" : "   \(model.name)"
+            let title = model.isActive ? "✓ \(model.name)" : "   \(model.name)"
             let item = NSMenuItem(title: title, action: #selector(selectModel(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = model
