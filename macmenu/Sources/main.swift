@@ -520,6 +520,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         sheetUrlField.frame = NSRect(x: pad + lw + 8, y: startY - gy * 2, width: fw, height: fh)
         sheetUrlField.placeholderString = "https://api.xxx.com/anthropic"
         sheetUrlField.stringValue = existing?.baseUrl ?? ""
+        // 强制单行，禁止换行
+        sheetUrlField.cell?.isScrollable = true
+        sheetUrlField.cell?.wraps = false
         vw.addSubview(sheetUrlField)
 
         // 第4行：API Token（多行，5行高度）
@@ -680,21 +683,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             guard event.modifierFlags.contains(.command) else { return event }
             let key = event.charactersIgnoringModifiers ?? ""
+
+            // Cmd+C 复制
+            if key == "c" {
+                if let tv = NSApp.keyWindow?.firstResponder as? NSTextView {
+                    tv.copy(nil)
+                    return nil
+                }
+                if let tf = NSApp.keyWindow?.firstResponder as? NSTextField,
+                   let editor = tf.currentEditor() as? NSTextView {
+                    editor.copy(nil)
+                    return nil
+                }
+            }
+
+            // Cmd+V 粘贴
             if key == "v" {
                 guard let clipboard = NSPasteboard.general.string(forType: .string) else { return event }
-                // NSTextView 直接
                 if let tv = NSApp.keyWindow?.firstResponder as? NSTextView {
                     tv.insertText(clipboard, replacementRange: tv.selectedRange())
                     return nil
                 }
-                // NSTextField: 获取 field editor 插入
-                if let tf = NSApp.keyWindow?.firstResponder as? NSTextField {
-                    if let editor = tf.currentEditor() as? NSTextView {
-                        editor.insertText(clipboard, replacementRange: editor.selectedRange())
-                        return nil
-                    }
+                if let tf = NSApp.keyWindow?.firstResponder as? NSTextField,
+                   let editor = tf.currentEditor() as? NSTextView {
+                    editor.insertText(clipboard, replacementRange: editor.selectedRange())
+                    return nil
                 }
             }
+
             return event
         }
     }
