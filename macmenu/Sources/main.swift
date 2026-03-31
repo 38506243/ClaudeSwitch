@@ -487,12 +487,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         let vw = NSView(frame: NSRect(x: 0, y: 0, width: panelW, height: panelH))
         panel.contentView = vw
 
-        let pad: CGFloat = 20
+        let pad: CGFloat = 10
         let lw: CGFloat = 100
         let fw: CGFloat = 340
         let fh: CGFloat = 24
         let gy: CGFloat = 38
-        let startY: CGFloat = 480   // 内容顶部（510-460=50pt底部padding）
+        let startY: CGFloat = 460   // 内容顶部（510-460=50pt底部padding）
 
         // 第1行：预设厂商下拉框
         let providerLbl = NSTextField(labelWithString: "预设厂商:")
