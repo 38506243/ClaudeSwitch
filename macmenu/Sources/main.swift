@@ -98,6 +98,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var presetProviders: [PresetProvider] = []
     // 当前预设厂商下拉选中的索引（-1=自定义，0+=presetProviders索引）
     private var sheetSelectedProviderIdx: Int = -1
+    // sheet 打开时动态挂载的 Edit 菜单（恢复 Cmd+V 粘贴功能）
+    private var temporaryEditMenu: NSMenu?
 
     override init() {
         let home = FileManager.default.homeDirectoryForCurrentUser
@@ -595,6 +597,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         panel.center()
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        // 挂载 Edit 菜单，使 Cmd+V 等快捷键在文本框内生效
+        installEditMenu()
     }
 
     // 根据预设厂商索引重建模型 ID 下拉列表
@@ -653,6 +657,35 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    // 挂载标准 Edit 菜单（使 Cmd+V/C+Z 等在文本框内生效）
+    private func installEditMenu() {
+        let editMenu = NSMenu(title: "编辑")
+        let items: [(String, String, String)] = [
+            ("剪切", "cut:", "x"),
+            ("复制", "copy:", "c"),
+            ("粘贴", "paste:", "v"),
+            ("全选", "selectAll:", "a"),
+        ]
+        for (title, sel, key) in items {
+            let item = NSMenuItem(title: title, action: Selector(sel), keyEquivalent: key)
+            item.target = nil
+            editMenu.addItem(item)
+        }
+
+        let mainMenu = NSMenu(title: "")
+        let editItem = NSMenuItem(title: "编辑", action: nil, keyEquivalent: "")
+        editItem.submenu = editMenu
+        mainMenu.addItem(editItem)
+        NSApp.mainMenu = mainMenu
+        temporaryEditMenu = mainMenu
+    }
+
+    // 卸载临时 Edit 菜单
+    private func uninstallEditMenu() {
+        NSApp.mainMenu = nil
+        temporaryEditMenu = nil
+    }
+
     @objc private func sheetSave(_ sender: NSButton) {
         // 强制提交正在编辑的文本框内容
         sheetPanel?.makeFirstResponder(nil)
@@ -689,9 +722,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         saveModels()
         sheetPanel.close()
+        uninstallEditMenu()
     }
 
-    @objc private func sheetCancel(_ sender: Any) { sheetPanel.close() }
+    @objc private func sheetCancel(_ sender: Any) {
+        sheetPanel.close()
+        uninstallEditMenu()
+    }
 
     @objc private func sheetDelete(_ sender: Any) {
         guard let eid = sheetEditingId else { return }
