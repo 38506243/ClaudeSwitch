@@ -471,7 +471,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         sheetSelectedProviderIdx = -1
 
         // 面板高度：320pt，内容基本垂直居中
-        let panelH: CGFloat = 500
+        let panelH: CGFloat = 460
         let panelW: CGFloat = 500
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: panelW, height: panelH),
@@ -492,7 +492,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         let fw: CGFloat = 340
         let fh: CGFloat = 24
         let gy: CGFloat = 38
-        let gyBetweenTokenAndModel: CGFloat = 0  // token字段和模型ID之间的额外间距
         let startY: CGFloat = 460   // 内容顶部（510-460=50pt底部padding）
 
         // 第1行：预设厂商下拉框
@@ -560,19 +559,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
 
         // 第5行：模型 ID
         let modelLbl = NSTextField(labelWithString: "模型 ID:")
-        modelLbl.frame = NSRect(x: pad, y: startY - gy * 4 - tokenFieldH + fh + 4 - gyBetweenTokenAndModel, width: lw, height: fh)
+        modelLbl.frame = NSRect(x: pad, y: startY - gy * 4 - tokenFieldH + fh + 4, width: lw, height: fh)
         modelLbl.alignment = .right
         vw.addSubview(modelLbl)
 
         sheetModelField = NSTextField()
-        sheetModelField.frame = NSRect(x: pad + lw + 8, y: startY - gy * 4 - tokenFieldH + fh + 4 - gyBetweenTokenAndModel, width: fw - 100, height: fh)
+        sheetModelField.frame = NSRect(x: pad + lw + 8, y: startY - gy * 4 - tokenFieldH + fh + 4, width: fw - 100, height: fh)
         sheetModelField.placeholderString = "例如: MiniMax-M2.7-highspeed"
         sheetModelField.stringValue = existing?.modelId ?? ""
         vw.addSubview(sheetModelField)
 
         // 模型 ID 快捷下拉（先以自定义模式初始化，后续会根据匹配结果重建）
         let modelPopupX = pad + lw + 8 + fw - 96
-        let modelPopupY = startY - gy * 4 - tokenFieldH + fh + 4 - gyBetweenTokenAndModel
+        let modelPopupY = startY - gy * 4 - tokenFieldH + fh + 4
         sheetModelPopup = NSPopUpButton(frame: NSRect(x: modelPopupX, y: modelPopupY, width: 96, height: fh))
         sheetModelPopup.target = self
         sheetModelPopup.action = #selector(modelPopupChanged(_:))
@@ -603,7 +602,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
         vw.addSubview(hintLbl)
 
         // 按钮
-        let by: CGFloat = 140  //153
+        let by: CGFloat = 140
 
         let saveBtn = NSButton(title: mode == .add ? "添加" : "保存", target: self, action: #selector(sheetSave(_:)))
         saveBtn.bezelStyle = .rounded
