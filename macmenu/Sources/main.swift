@@ -72,7 +72,7 @@ struct ModelItem: Codable, Identifiable {
 }
 
 // MARK: - App Delegate
-class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTextEditingDelegate, NSTextFieldDelegate {
     var statusItem: NSStatusItem!
     var models: [ModelItem] = []
     private let configDir: URL
@@ -367,6 +367,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(quitItem)
     }
 
+    // MARK: - NSControlTextEditingDelegate
+    // 防止 Base URL 包含换行符（NSTextField 的 Alt+Enter 等仍可插入换行，实时删除）
+    func controlTextDidChange(_ obj: Notification) {
+        guard let tf = obj.object as? NSTextField, tf === sheetUrlField else { return }
+        let raw = tf.stringValue
+        if raw.contains("\n") || raw.contains("\r") {
+            tf.stringValue = raw.replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: "\r", with: " ")
+        }
+    }
+
     @objc private func selectModel(_ sender: NSMenuItem) {
         guard let modelId = sender.representedObject as? String ?? (sender.representedObject as? ModelItem).map({ $0.id }) else { return }
 
@@ -461,7 +471,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         sheetSelectedProviderIdx = -1
 
         // 面板高度：320pt，内容基本垂直居中
-        let panelH: CGFloat = 320
+        let panelH: CGFloat = 510
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 480, height: panelH),
             styleMask: [.titled, .closable],
@@ -481,7 +491,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let fw: CGFloat = 340
         let fh: CGFloat = 24
         let gy: CGFloat = 38
-        let startY: CGFloat = 270   // 内容顶部（270-18=252pt 距底，顶部 pad=18pt，基本居中）
+        let startY: CGFloat = 460   // 内容顶部（510-460=50pt底部padding）
 
         // 第1行：预设厂商下拉框
         let providerLbl = NSTextField(labelWithString: "预设厂商:")
@@ -523,6 +533,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // 强制单行，禁止换行
         sheetUrlField.cell?.isScrollable = true
         sheetUrlField.cell?.wraps = false
+        sheetUrlField.delegate = self
         vw.addSubview(sheetUrlField)
 
         // 第4行：API Token（多行，5行高度）
