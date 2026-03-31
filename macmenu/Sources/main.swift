@@ -682,11 +682,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func installEditMenu() {
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // Alt+Enter / Option+Enter：禁止换行（NSTextField 默认 Alt+Enter 插入换行符）
+            let key = event.keyCode
+            if (key == 36 || key == 76) && event.modifierFlags.contains(.option) {
+                return nil  // 静默丢弃，阻止换行符插入
+            }
+
             guard event.modifierFlags.contains(.command) else { return event }
-            let key = event.charactersIgnoringModifiers ?? ""
+            let chars = event.charactersIgnoringModifiers ?? ""
 
             // Cmd+C 复制
-            if key == "c" {
+            if chars == "c" {
                 if let tv = NSApp.keyWindow?.firstResponder as? NSTextView {
                     tv.copy(nil)
                     return nil
@@ -698,10 +704,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 }
             }
 
-            // Cmd+V 粘贴（去除换行符，避免多行文本进入单行字段）
-            if key == "v" {
+            // Cmd+V 粘贴（去除换行符）
+            if chars == "v" {
                 guard let raw = NSPasteboard.general.string(forType: .string) else { return event }
-                // 换行符替换为空格（适用于所有文本框）
                 let cleaned = raw.replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: "\r", with: " ")
                 if let tv = NSApp.keyWindow?.firstResponder as? NSTextView {
                     tv.insertText(cleaned, replacementRange: tv.selectedRange())
