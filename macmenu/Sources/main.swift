@@ -789,6 +789,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSControlTex
     }
 
     @objc private func sheetDelete(_ sender: Any) {
+        let alert = NSAlert()
+        alert.messageText = "确认删除"
+        alert.informativeText = "确定要删除这个模型吗？此操作无法撤销。"
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "删除")
+        alert.addButton(withTitle: "取消")
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return }
         guard let eid = sheetEditingId else { return }
         models.removeAll { $0.id == eid }
         if models.isEmpty {
