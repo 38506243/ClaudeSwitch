@@ -436,12 +436,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     // MARK: - 添加/编辑
-    @objc private func addModel() { showSheet(mode: .add, existing: nil) }
+    @objc private func addModel() {
+        // 如果 sheet 已存在，只唤醒到前台
+        if sheetPanel != nil {
+            sheetPanel?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        showSheet(mode: .add, existing: nil)
+    }
     @objc private func editModels() { showSheet(mode: .edit, existing: models.first(where: { $0.isActive }) ?? models.first) }
 
     private enum SheetMode { case add, edit }
 
     private func showSheet(mode: SheetMode, existing: ModelItem?) {
+        // 如果 sheet 已存在，只唤醒到前台
+        if sheetPanel != nil {
+            sheetPanel?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
         sheetEditingId = existing?.id
         sheetSelectedProviderIdx = -1
 
@@ -728,11 +743,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         saveModels()
         sheetPanel.close()
         uninstallEditMenu()
+        sheetPanel = nil
     }
 
     @objc private func sheetCancel(_ sender: Any) {
         sheetPanel.close()
         uninstallEditMenu()
+        sheetPanel = nil
     }
 
     @objc private func sheetDelete(_ sender: Any) {
@@ -746,6 +763,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if !models.contains(where: { $0.isActive }) { models[0].isActive = true }
         saveModels()
         sheetPanel.close()
+        sheetPanel = nil
     }
 
     // MARK: - 终端启动
